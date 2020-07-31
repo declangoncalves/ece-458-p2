@@ -141,7 +141,7 @@ function login(userInput, passInput) {
 /**
  * Called when the user submits the signup form.
  */
-function signup(userInput, passInput, passInput2, emailInput, fullNameInput) {
+async function signup(userInput, passInput, passInput2, emailInput, fullNameInput) {
   // get the form fields
   var username  = userInput.value,
       password  = passInput.value,
@@ -158,11 +158,12 @@ function signup(userInput, passInput, passInput2, emailInput, fullNameInput) {
   const salt = randomBytes(128);
 
   // Hash password + salt
-  const hashTag = hash(password.concat(salt))
+  const hashTag = await hash(password.concat(salt));
+  const pw = hashTag.join('');
   
   // send the signup form to the server
   serverRequest("signup",  // resource to call
-                {"username":username, "password":hashTag, "salt":salt, "email":email, "fullname":fullname} // this should be populated with needed parameters
+                {"username":username, "password":pw, "salt":salt, "email":email, "fullname":fullname} // this should be populated with needed parameters
   ).then(function(result) {
     // if everything was good
     if (result.response.ok) {

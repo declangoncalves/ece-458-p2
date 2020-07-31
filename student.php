@@ -135,7 +135,7 @@ function preflight(&$request, &$response, &$db) {
  */
 function signup(&$request, &$response, &$db) {
   $username = $request->param("username"); // The requested username from the client
-  $password = $request->param("password"); // The requested password from the client
+  $passwrd = $request->param("password"); // The requested password from the client
   $salt = $request->param("salt");     // The requested password salt from the client
   $email    = $request->param("email");    // The requested email address from the client
   $fullname = $request->param("fullname"); // The requested full name from the client
@@ -149,6 +149,8 @@ function signup(&$request, &$response, &$db) {
   $statement2->bindValue(':email', $email);
   $count2 = $statement2->execute();
   log_to_console("ere");
+  // log_to_console(gettype($username));
+  // log_to_console(gettype($passwrd));
 
   // if ($count1 != 0 || $count2 != 0) {
   //     log_to_console("NOT UNIQUE");
@@ -167,17 +169,18 @@ function signup(&$request, &$response, &$db) {
   $now = new DateTime();
   $now->format(DateTime::ATOM);
   log_to_console("ere4");
-  $statement = $db->prepare('INSERT INTO user(username, passwd, email, fullname, valid, modified) VALUES(:username, :password, :email, :fullname, true, :now);');
+  $statement = $db->prepare("INSERT INTO user VALUES(:username,:passwrd,:email,'bob3', 'true', 'bob3');");
 
   log_to_console("ere7");
   try {
   $result = $statement->execute([
     ':username' => $username,
-    ':password' => $password,
+    ':passwrd' => $passwrd,
     ':email' => $email,
-    ':fullname' => $fullname,
-    ':now' => $now,
+    // ':fullname' => $fullname,
+    // ':now' => $now,
 ]);
+$result = $statement->execute();
   }
   catch(Exception $e) {
     log_to_console($e);
