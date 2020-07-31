@@ -119,6 +119,8 @@
  * resource from being called.
  */
 function preflight(&$request, &$response, &$db) {
+
+
   $response->set_http_code(200);
   $response->success("Request OK");
   log_to_console("OK");
@@ -134,9 +136,56 @@ function preflight(&$request, &$response, &$db) {
 function signup(&$request, &$response, &$db) {
   $username = $request->param("username"); // The requested username from the client
   $password = $request->param("password"); // The requested password from the client
+  $salt = $request->param("salt");     // The requested password salt from the client
   $email    = $request->param("email");    // The requested email address from the client
   $fullname = $request->param("fullname"); // The requested full name from the client
   
+  // Check that username and email are unique and valid
+  $statement1 = $db->prepare("SELECT COUNT(*) FROM user WHERE username = :username;");
+  $statement1->bindValue(':username', $username);
+  $count1 = $statement1->execute();
+
+  $statement2 = $db->prepare("SELECT COUNT(*) FROM user WHERE email = :email;");
+  $statement2->bindValue(':email', $email);
+  $count2 = $statement2->execute();
+  log_to_console("ere");
+
+  // if ($count1 != 0 || $count2 != 0) {
+  //     log_to_console("NOT UNIQUE");
+  //     log_to_console("count1: $count1");
+  //     log_to_console("count2: $count2");
+  //     $response->set_http_code(400); // Created
+  //     return true;
+  // }
+
+  // TODO: Check that password is valid
+
+  
+
+  log_to_console("ere3");
+  // Add row to DB
+  $now = new DateTime();
+  $now->format(DateTime::ATOM);
+  log_to_console("ere4");
+  $statement = $db->prepare('INSERT INTO user(username, passwd, email, fullname, valid, modified) VALUES(:username, :password, :email, :fullname, true, :now);');
+
+  log_to_console("ere7");
+  try {
+  $result = $statement->execute([
+    ':username' => $username,
+    ':password' => $password,
+    ':email' => $email,
+    ':fullname' => $fullname,
+    ':now' => $now,
+]);
+  }
+  catch(Exception $e) {
+    log_to_console($e);
+  }
+
+  log_to_console($result);
+
+  log_to_console("ere1");
   // Respond with a message of success.
   $response->set_http_code(201); // Created
   $response->success("Account created.");
@@ -155,8 +204,11 @@ function signup(&$request, &$response, &$db) {
 function identify(&$request, &$response, &$db) {
   $username = $request->param("username"); // The username
 
+  $salt = "1234";
+  // Generate challenge
   $response->set_http_code(200);
   $response->success("Successfully identified user.");
+  $response->set_data("salt", $salt);
   log_to_console("Success.");
 
   return true;
@@ -244,3 +296,4 @@ function logout(&$request, &$response, &$db) {
   return true;
 }
 ?>
+

@@ -108,10 +108,15 @@ function login(userInput, passInput) {
       
   credentials(username, password).then(function(idJson) {
     // do any needed work with the credentials
+
+    // TODO: Hash password
+    const salt = idJson.salt;
+    const saltedPW = password.concat(salt);
+    const hashTag = hash(saltedPW);
   
     // Send a login request to the server.
     serverRequest("login", // resource to call
-                  {"username":username, "password":password} // this should be populated with needed parameters
+                  {"username":username, "password":hashTag}
     ).then(function(result) {
       // If the login was successful, show the dashboard.
       if (result.response.ok) {
@@ -144,11 +149,20 @@ function signup(userInput, passInput, passInput2, emailInput, fullNameInput) {
       email     = emailInput.value,
       fullname  = fullNameInput.value;
 
-  // do any preprocessing on the user input here before sending to the server
+  // Check that password2 === password
+  if (password2 !== password) {
+    // 
+  }
+
+  // Generate salt
+  const salt = randomBytes(128);
+
+  // Hash password + salt
+  const hashTag = hash(password.concat(salt))
   
   // send the signup form to the server
   serverRequest("signup",  // resource to call
-                {"username":username, "password":password, "email":email, "fullname":fullname} // this should be populated with needed parameters
+                {"username":username, "password":hashTag, "salt":salt, "email":email, "fullname":fullname} // this should be populated with needed parameters
   ).then(function(result) {
     // if everything was good
     if (result.response.ok) {
@@ -161,7 +175,6 @@ function signup(userInput, passInput, passInput2, emailInput, fullNameInput) {
     serverStatus(result);
   });
 }
-
 
 /**
  * Called when the add password form is submitted.
