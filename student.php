@@ -119,9 +119,6 @@
  * resource from being called.
  */
 function preflight(&$request, &$response, &$db) {
-  // $token = $request->param("token"); // The requested username from the client
-  // log_to_console($token);
-
   $response->set_http_code(200);
   $response->success("Request OK");
   log_to_console("OK");
@@ -173,7 +170,8 @@ function signup(&$request, &$response, &$db) {
   $hash = hash_with_salt($password, $salt);
 
   try {
-    $statement = $db->prepare("INSERT INTO user VALUES(?,?,?,?,'TRUE', datetime('now','+1 month'));");
+    // one thing to not is we do not ever touch the "modified" field since we are never asked to make use of it
+    $statement = $db->prepare("INSERT INTO user VALUES(?,?,?,?,'TRUE', datetime('now'));");
     $statement->execute([$username, $hash, $email, $fullname]);
     $statement = $db->prepare("INSERT INTO user_login(username,salt) VALUES(?,?);");
     $statement->execute([$username, $salt]);
@@ -217,12 +215,14 @@ function login(&$request, &$response, &$db) {
 
     $session_token = hash_with_salt($username, random_bytes(32));
 
+    // the session tokens are set to expire in one month, although since we aren't asked to check for expiry
+    // we don't actually read this field and sessions actually last indefinitely
     try {
-      $statement = $db->prepare("INSERT INTO user_session VALUES(?,?,datetime('now'));");
+      $statement = $db->prepare("INSERT INTO user_session VALUES(?,?,datetime('now','+1 month'));");
       $statement->execute([$session_token, $username]);
       log_to_console("Session created.");
     } catch(Exception $e) {
-      $statement = $db->prepare("UPDATE user_session SET sessionid=?, expires=datetime('now') WHERE username=?;");
+      $statement = $db->prepare("UPDATE user_session SET sessionid=?, expires=datetime('now','+1 month') WHERE username=?;");
       $statement->execute([$session_token, $username]);
       log_to_console("Session updated.");
     }
@@ -231,7 +231,6 @@ function login(&$request, &$response, &$db) {
     $response->set_data("fullname", $_fullname); // Return the full name to the client for display
     $response->set_data("tokens", [
       "session" => $session_token,
-      "pass" => hash('sha256', $password),
     ]);
     $response->success("Successfully logged in.");
     return true;

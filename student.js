@@ -101,19 +101,23 @@ async function credentials(username, password) {
 /**
  * Called when the user submits the log-in form.
  */
-function login(userInput, passInput) {
+async function login(userInput, passInput) {
   // get the form fields
   var username = userInput.value,
       password = passInput.value;
 
+  // hash to make password long enough for use in aes master password encryption
+  password = await hash(password);
+
   // Send a login request to the server.
   serverRequest("login", // resource to call
-    {"username":username, "password":password}
+  // give server doubled-hashed password so it cannot decode encrypted site passwords
+    {username, password: await hash(password)},
   ).then(function(result) {
     // If the login was successful, show the dashboard.
     if (result.response.ok) {
       // do any other work needed after successful login here
-
+      sessionStorage.setItem("pass", password); //
       // display the user's full name in the userdisplay field
       let userdisplay = document.getElementById("userdisplay");
       // userdisplay refers to the DOM element that students will need to
@@ -143,6 +147,8 @@ async function signup(userInput, passInput, passInput2, emailInput, fullNameInpu
     alert('Passwords do not match')
     return
   }
+
+  password = await hash(await hash(password)); // reason behind double hashing above
 
   // send the signup form to the server
   serverRequest("signup", {username, password, email, fullname})
